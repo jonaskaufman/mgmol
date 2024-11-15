@@ -36,11 +36,18 @@ cd libROM
 ./scripts/compile.sh
 cd ${BUILD_DIR}
 
+# libtorch
+TORCH_PATH=${BUILD_DIR}/libtorch
+#wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
+wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-latest.zip
+unzip libtorch-cxx11-abi-shared-with-deps-latest.zip
+
 # call cmake
 cmake -DCMAKE_TOOLCHAIN_FILE=${MGMOL_ROOT}/cmake_toolchains/quartz.default.cmake \
       -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
       -DUSE_LIBROM=${USE_LIBROM} \
       -DLIBROM_PATH=${LIBROM_PATH} \
+      -DTORCH_PATH=${TORCH_PATH} \
       ..
 
 #      -DCMAKE_CXX_COMPILER=mpic++ \

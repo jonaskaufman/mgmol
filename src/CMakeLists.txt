@@ -160,6 +160,7 @@ set(SOURCES
  ChebyshevApproximation.cc
  ChebyshevApproximationInterface.cc
  rom.cc
+ #ae.cc
 )
 
 if(USE_LIBROM)
@@ -175,6 +176,7 @@ target_include_directories(mgmol_src PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 if(USE_LIBROM)
   target_include_directories (mgmol_src PRIVATE ${LIBROM_INCLUDES})
   target_link_libraries(mgmol_src ${LIBROM_LIB})
+  target_link_libraries(mgmol_src ${TORCH_LIBRARIES})
 endif(USE_LIBROM)
 
 target_link_libraries(mgmol_src ${link_libs})
@@ -222,6 +224,8 @@ if(USE_LIBROM)
   target_link_libraries(mgmol-rom ${LAPACK_LIBRARIES})
   target_link_libraries(mgmol-rom ${Boost_LIBRARIES})
   target_link_libraries(mgmol-rom ${LIBROM_LIB})
+  target_link_libraries(mgmol-rom ${TORCH_LIBRARIES})
+
   if (${OPENMP_CXX_FOUND})
     target_link_libraries(mgmol-rom OpenMP::OpenMP_CXX)
   endif()
