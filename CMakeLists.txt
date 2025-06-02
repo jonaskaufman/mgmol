@@ -149,6 +149,7 @@ if(USE_LIBROM)
   endif(NOT LIBROM_PATH)
 
   find_package(libROM REQUIRED)
+  find_package(Torch REQUIRED)
 
   if(libROM_FOUND)
     set(MGMOL_HAS_LIBROM 1)
