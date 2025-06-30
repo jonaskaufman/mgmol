@@ -37,29 +37,9 @@ git checkout 321d18f4d5adfa29f0a3de9be2699fee9732f2bf
 ./scripts/compile.sh
 cd ${BUILD_DIR}
 
-# libtorch (precompiled)
-wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.7.0%2Bcpu.zip
-unzip libtorch-cxx11-abi-shared-with-deps-2.7.0+cpu.zip
-TORCH_PATH=${BUILD_DIR}/libtorch
-
-# libtorch (compile from scratch)
-#git clone https://github.com/pytorch/pytorch -b v2.7.0 --recurse-submodules
-#cd pytorch
-##python tools/build_libtorch.py
-#mkdir pytorch-build
-#cd pytorch-build
-#cmake -DBUILD_SHARED_LIBS:BOOL=ON \
-#      -DCMAKE_BUILD_TYPE:STRING=Release \
-#      -DPYTHON_EXECUTABLE:PATH=`which python3` \
-#      -DCMAKE_INSTALL_PREFIX:PATH=../pytorch-install \
-#      -DCMAKE_TOOLCHAIN_FILE=${MGMOL_ROOT}/cmake_toolchains/quartz.default.cmake \
-#      -DMKL_HAS_SHGEMM:BOOL=OFF \
-#      ..
-##cmake --build . --target install
-#make -j 16
-#make install
-#TORCH_PATH=${BUILD_DIR}/pytorch/pytorch-install
-#cd ${BUILD_DIR}
+source /collab/usr/gapps/python/toss_4_x86_64_ib/anaconda3/bin/activate
+conda activate mgmol
+export TORCH_PATH=$(python3 -c 'import torch;print(torch.utils.cmake_prefix_path)')
 
 # call cmake
 cmake -DCMAKE_TOOLCHAIN_FILE=${MGMOL_ROOT}/cmake_toolchains/quartz.default.cmake \
@@ -68,6 +48,8 @@ cmake -DCMAKE_TOOLCHAIN_FILE=${MGMOL_ROOT}/cmake_toolchains/quartz.default.cmake
       -DLIBROM_PATH=${LIBROM_PATH} \
       -DTorch_DIR=${TORCH_PATH} \
       -DCMAKE_PREFIX_PATH=${TORCH_PATH} \
+      -DMKL_THREADING="gnu_thread" \
+      -DMKL_INTERFACE_FULL=gf_lp64 \
       .. 
 
 #      -DCMAKE_CXX_COMPILER=mpic++ \
@@ -75,7 +57,6 @@ cmake -DCMAKE_TOOLCHAIN_FILE=${MGMOL_ROOT}/cmake_toolchains/quartz.default.cmake
 #      -DMPIEXEC_NUMPROC_FLAG="-n" \
 #      -DBLA_VENDOR=${BLAS_VENDOR} \
 #      -DSCALAPACK_BLACS_LIBRARY=${BLACS_LIB}/libmkl_blacs_intelmpi_lp64.so \
-#      -DCMAKE_BUILD_TYPE=DEBUG \
 
 # call make install
 make -j 16

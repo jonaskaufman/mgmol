@@ -4,7 +4,7 @@ cmake_policy(SET CMP0074 NEW)
 
 project (MGmol C CXX Fortran)
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 17)
 
 # Specify the location of additional CMAKE modules
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
