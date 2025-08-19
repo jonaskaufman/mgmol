@@ -135,8 +135,10 @@ int main(int argc, char** argv)
         // expect positions to be replicated on all MPI tasks
         std::vector<double> forces;
 	double eks;
+	int print_prec = 10;
 	bool run_dft = true;
 	if (run_dft) {
+	std::cout << "Running DFT" << std::endl;
         eks
             = mgmol->evaluateEnergyAndForces(positions, anumbers, forces);
         mgmol->dumpRestart();
@@ -144,13 +146,13 @@ int main(int argc, char** argv)
         // print out results
         if (MPIdata::onpe0)
         {
-            std::cout << "Eks1 : " << eks << std::endl;
-            std::cout << "Forces2 :" << std::endl;
+            std::cout << std::setprecision(print_prec) << "Eks1 : " << eks << std::endl;
+            std::cout << "Forces1 :" << std::endl;
             for (std::vector<double>::iterator it = forces.begin();
                  it != forces.end(); it += 3)
             {
                 for (int i = 0; i < 3; i++)
-                    std::cout << "    " << *(it + i);
+                    std::cout << std::setprecision(print_prec) << "    " << *(it + i);
                 std::cout << std::endl;
             }
         }
@@ -175,6 +177,7 @@ int main(int argc, char** argv)
 	
 	// load torch model
 	std::cout << "Loading torch model" << std::endl;
+
 	torch::jit::script::Module encoder;
 	torch::jit::script::Module decoder;
 	try {
@@ -197,22 +200,11 @@ int main(int argc, char** argv)
 	    orbital_tensors.push_back(torch::from_blob(orbitals.getPsi(i), {262144}, torch::TensorOptions().dtype(torch::CppTypeToScalarType<ORBDTYPE>())));
 	}
 	at::Tensor original_orbitals = at::stack(orbital_tensors);
-	//std::cout << original_orbitals.type() << std::endl;
 	original_orbitals = original_orbitals.toType(torch::CppTypeToScalarType<float>());
-	//std::cout << original_orbitals.type() << std::endl;
 
-	//std::cout << original_orbitals.numel() << std::endl;
-	auto original_norm = original_orbitals.norm();
-	std::cout << "Norm: " << original_norm << std::endl;
-	std::vector<float> v(original_orbitals.data_ptr<float>(), original_orbitals.data_ptr<float>() + original_orbitals.numel());
-	float v_norm = 0;
-	for (auto i : v)
-	{
-	    v_norm += i*i;
-	}
-	v_norm = sqrt(v_norm);
-	std::cout << "Norm (explicit): " << v_norm << std::endl;
-	std::cout << "Shape: " << at::_shape_as_tensor(original_orbitals) << std::endl;
+	float original_norm = *(original_orbitals.norm().data_ptr<float>());
+	std::cout << "Original shape: " << at::_shape_as_tensor(original_orbitals) << std::endl;
+	std::cout << "Original norm: " << original_norm << std::endl;
 	encoder_input.push_back(original_orbitals);
 
 	// encode orbitals
@@ -226,16 +218,22 @@ int main(int argc, char** argv)
 	std::vector<torch::jit::IValue> decoder_input;
 	decoder_input.push_back(codes);
 	auto approx_orbitals = decoder.forward(decoder_input).toTensor();
-	std::cout << "Decoded shape: " << at::_shape_as_tensor(approx_orbitals) << std::endl;
-	//std::cout << approx_orbitals.type() << std::endl;
+	approx_orbitals = approx_orbitals.toType(torch::CppTypeToScalarType<float>());
+	approx_orbitals = approx_orbitals.reshape_as(original_orbitals);
+
+	std::cout << "Reconstructed shape: " << at::_shape_as_tensor(approx_orbitals) << std::endl;
+	std::cout << "Reconstructed norm: " << approx_orbitals.norm() << std::endl;
 
 	// calculate error
 	at::Tensor diff = original_orbitals - approx_orbitals;
-	std::cout << "Relative error: " << diff.norm() / original_norm << std::endl;
+	float diff_norm = *(diff.norm().data_ptr<float>());
+	std::cout << "Difference norm: " << diff_norm << std::endl;
+	std::cout << "Relative error: " << diff_norm / original_norm << std::endl;
 
 	// set orbitals to reconstructed orbitals
+	std::cout << "Setting orbitals to reconstruction" << std::endl;
 	approx_orbitals = approx_orbitals.toType(torch::CppTypeToScalarType<ORBDTYPE>()).contiguous();
-	//std::cout << approx_orbitals.type() << std::endl;
+
 	for (int i = 0; i < n_psi; ++i) {
 	    pb::GridFunc<ORBDTYPE> gf_psi(mymesh->grid(), ct.bcWF[0], ct.bcWF[1], ct.bcWF[2]);	    
 	    gf_psi.assign(approx_orbitals[i].data_ptr<ORBDTYPE>());
@@ -256,13 +254,13 @@ int main(int argc, char** argv)
         // print out results
         if (MPIdata::onpe0)
         {
-            std::cout << "Eks2 : " << eks << std::endl;
+            std::cout << std::setprecision(print_prec) << "Eks2 : " << eks << std::endl;
             std::cout << "Forces2 :" << std::endl;
             for (std::vector<double>::iterator it = forces.begin();
                  it != forces.end(); it += 3)
             {
                 for (int i = 0; i < 3; i++)
-                    std::cout << "    " << *(it + i);
+                    std::cout << std::setprecision(print_prec) << "    " << *(it + i);
                 std::cout << std::endl;
             }
         }
